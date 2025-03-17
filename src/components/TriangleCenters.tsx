@@ -1,5 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
+
+type Point = {
+  x: number;
+  y: number;
+};
+
+type CenterType = 'centroid' | 'circumcenter' | 'incenter' | 'orthocenter';
 
 const TriangleCenters = () => {
   const [points, setPoints] = useState([
@@ -7,7 +14,7 @@ const TriangleCenters = () => {
     { x: 300, y: 300 },
     { x: 200, y: 100 }
   ]);
-  const [selectedCenter, setSelectedCenter] = useState('centroid');
+  const [selectedCenter, setSelectedCenter] = useState<CenterType>('centroid');
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showIntersections, setShowIntersections] = useState(false);
@@ -26,7 +33,7 @@ const TriangleCenters = () => {
     return { x, y };
   };
 
-  const centerColors = {
+  const centerColors: Record<CenterType, string> = {
     centroid: '#FF6B6B',
     circumcenter: '#4ECDC4',
     incenter: '#45B7D1',
@@ -100,7 +107,7 @@ const TriangleCenters = () => {
     return orthocenter;
   };
 
-  const getCenter = () => {
+  const center = useMemo(() => {
     switch (selectedCenter) {
       case 'centroid':
         return calculateCentroid();
@@ -111,12 +118,12 @@ const TriangleCenters = () => {
       case 'orthocenter':
         return calculateOrthocenter();
       default:
-        return { x: 0, y: 0 };
+        return calculateCentroid();
     }
-  };
+  }, [selectedCenter, points]);
 
-  const center = getCenter();
-  
+  const currentCenter = center;
+
   const getCentroidLines = () => {
     const [a, b, c] = points;
 
@@ -310,7 +317,7 @@ const TriangleCenters = () => {
         <div className="mb-3 flex justify-center">
           <select
             value={selectedCenter}
-            onChange={(e) => setSelectedCenter(e.target.value)}
+            onChange={(e) => setSelectedCenter(e.target.value as CenterType)}
             className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
           >
             <option value="centroid">Centroid</option>
