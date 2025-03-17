@@ -34,7 +34,7 @@ jobs:
         run: npm run build
 
       - name: Upload build output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db98b9b5f5df2519 # v3.1.2
         with:
           name: build-output
           path: ./out
