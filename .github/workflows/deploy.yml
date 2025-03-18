@@ -11,9 +11,10 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  deployments: write
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -33,6 +34,8 @@ jobs:
         run: npm install
         
       - name: Build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /triangle-centers-explorer
         run: npm run build
 
       - name: Upload build output
@@ -52,4 +55,6 @@ jobs:
           
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3 
+        uses: actions/deploy-pages@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} 
