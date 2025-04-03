@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  basePath: '/triangle-centers-explorer',
+  basePath: process.env.NODE_ENV === 'production' ? '/triangle-centers-explorer' : '',
   images: {
     unoptimized: true
   },
@@ -9,7 +9,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
-  assetPrefix: '/triangle-centers-explorer/'
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/triangle-centers-explorer/' : ''
 }
 
 module.exports = nextConfig 

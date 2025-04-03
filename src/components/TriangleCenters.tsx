@@ -513,38 +513,60 @@ const TriangleCenters = () => {
     }
   };
 
-  const handlePointDrag = (index: number, e: MouseEvent) => {
-    if (!isDragging || !svgRef.current) return;
-    const svgRect = svgRef.current.getBoundingClientRect();
-    const newPoints = [...points];
-    newPoints[index] = {
-      x: Math.max(0, Math.min(400, e.clientX - svgRect.left)),
-      y: Math.max(0, Math.min(400, e.clientY - svgRect.top))
-    };
-    setPoints(newPoints);
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isDragging && hoveredPoint !== null && svgRef.current) {
+      const svg = svgRef.current;
+      const rect = svg.getBoundingClientRect();
+      
+      // Calculate the mouse position relative to the SVG viewBox
+      const scaleX = 400 / rect.width;
+      const scaleY = 400 / rect.height;
+      
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      setPoints(prevPoints => {
+        const newPoints = [...prevPoints];
+        newPoints[hoveredPoint] = { x, y };
+        return newPoints;
+      });
+    }
+  };
+
+  const handleMouseDown = (index: number, e: React.MouseEvent<SVGCircleElement>) => {
+    e.preventDefault(); // Prevent any default behavior
+    setIsDragging(true);
+    setHoveredPoint(index);
+    
+    // Immediately update the point position to match the click
+    if (svgRef.current) {
+      const svg = svgRef.current;
+      const rect = svg.getBoundingClientRect();
+      const scaleX = 400 / rect.width;
+      const scaleY = 400 / rect.height;
+      
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      setPoints(prevPoints => {
+        const newPoints = [...prevPoints];
+        newPoints[index] = { x, y };
+        return newPoints;
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setHoveredPoint(null);
   };
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && hoveredPoint !== null) {
-        handlePointDrag(hoveredPoint, e);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, hoveredPoint]);
+  }, []);
 
   const centerInfo = {
     centroid: "The centroid is the arithmetic mean position of all points in the triangle. It's where the medians intersect!",
@@ -832,6 +854,7 @@ const TriangleCenters = () => {
               className="absolute inset-0 w-full h-full"
               viewBox="0 0 400 400"
               preserveAspectRatio="xMidYMid meet"
+              onMouseMove={handleMouseMove}
             >
               {displayState === 2 && getRightAngles().map((angle, index) => (
                 <line
@@ -937,10 +960,7 @@ const TriangleCenters = () => {
                   strokeWidth="2"
                   onMouseEnter={() => setHoveredPoint(index)}
                   onMouseLeave={() => !isDragging && setHoveredPoint(null)}
-                  onMouseDown={() => {
-                    setIsDragging(true);
-                    setHoveredPoint(index);
-                  }}
+                  onMouseDown={(e) => handleMouseDown(index, e)}
                   style={{ cursor: 'pointer' }}
                 />
               ))}
