@@ -812,20 +812,17 @@ const TriangleCenters = () => {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-center mb-6">Triangle Centers Explorer</h1>
         
-        <div className="flex flex-wrap justify-center gap-4 mb-6">
-          {Object.entries(centerColors).map(([center, color]) => (
-            <button
-              key={center}
-              onClick={() => setSelectedCenter(center as CenterType)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedCenter === center
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-            >
-              {center.charAt(0).toUpperCase() + center.slice(1)}
-            </button>
-          ))}
+        <div className="flex justify-center mb-6">
+          <select
+            value={selectedCenter}
+            onChange={(e) => setSelectedCenter(e.target.value as CenterType)}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="centroid">Centroid</option>
+            <option value="circumcenter">Circumcenter</option>
+            <option value="incenter">Incenter</option>
+            <option value="orthocenter">Orthocenter</option>
+          </select>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
