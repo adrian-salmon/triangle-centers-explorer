@@ -9,7 +9,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH
+  assetPrefix: '/triangle-centers-explorer/'
 }
 
 module.exports = nextConfig 

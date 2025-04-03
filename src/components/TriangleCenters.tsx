@@ -808,154 +808,180 @@ const TriangleCenters = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-white">
-      <div className="bg-white p-4 rounded-lg shadow-lg w-[500px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <h2 className="text-xl font-bold mb-3 text-center text-gray-800 flex items-center justify-center">
-          <Sparkles className="mr-2 h-5 w-5" /> Triangle Centers Explorer <Sparkles className="ml-2 h-5 w-5" />
-        </h2>
-        <div className="mb-3 flex justify-center">
-          <select
-            value={selectedCenter}
-            onChange={(e) => setSelectedCenter(e.target.value as CenterType)}
-            className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
-          >
-            <option value="centroid">Centroid</option>
-            <option value="circumcenter">Circumcenter</option>
-            <option value="incenter">Incenter</option>
-            <option value="orthocenter">Orthocenter</option>
-          </select>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-center mb-6">Triangle Centers Explorer</h1>
+        
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
+          {Object.entries(centerColors).map(([center, color]) => (
+            <button
+              key={center}
+              onClick={() => setSelectedCenter(center as CenterType)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedCenter === center
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              {center.charAt(0).toUpperCase() + center.slice(1)}
+            </button>
+          ))}
         </div>
-        <div className="text-center mb-2">
-          <p className="text-sm font-semibold text-blue-600">Drag the blue points to explore!</p>
-        </div>
-        <div className="relative">
-          <svg width="400" height="400" className="mx-auto border-2 border-gray-200 rounded-lg" ref={svgRef}>
-            {displayState === 2 && getRightAngles().map((angle, index) => (
-              <line
-                key={`right-angle-${index}`}
-                x1={angle.x1}
-                y1={angle.y1}
-                x2={angle.x2}
-                y2={angle.y2}
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-              />
-            ))}
-            
-            <polygon
-              points={`${points[0].x},${points[0].y} ${points[1].x},${points[1].y} ${points[2].x},${points[2].y}`}
-              fill="rgba(147, 197, 253, 0.3)"
-              stroke="#3B82F6"
-              strokeWidth="2"
-            />
-            
-            {showIntersections && getIntersectionLines().map((line, index) => (
-              <line
-                key={`line-${index}`}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-                strokeDasharray="5,3"
-                opacity="0.7"
-              />
-            ))}
-            
-            {showIntersections && selectedCenter === 'circumcenter' && displayState === 2 && (
-              <circle
-                cx={currentCenter.x}
-                cy={currentCenter.y}
-                r={calculateCircumradius()}
-                fill="none"
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-                opacity="0.7"
-              />
-            )}
-            
-            {showIntersections && selectedCenter === 'incenter' && displayState === 2 && (
-              <circle
-                cx={currentCenter.x}
-                cy={currentCenter.y}
-                r={calculateInradius()}
-                fill="none"
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-                opacity="0.7"
-              />
-            )}
-            
-            {displayState === 2 && selectedCenter === 'centroid' && getCentroidTickMarks().map((tick, index) => (
-              <line
-                key={`tick-${index}`}
-                x1={tick.x1}
-                y1={tick.y1}
-                x2={tick.x2}
-                y2={tick.y2}
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-              />
-            ))}
-            
-            {displayState === 2 && selectedCenter === 'circumcenter' && getCircumcenterTickMarks().map((tick, index) => (
-              <line
-                key={`tick-${index}`}
-                x1={tick.x1}
-                y1={tick.y1}
-                x2={tick.x2}
-                y2={tick.y2}
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-              />
-            ))}
-            
-            {displayState === 2 && selectedCenter === 'incenter' && getIncenterTickMarks().map((tick, index) => (
-              <line
-                key={`tick-${index}`}
-                x1={tick.x1}
-                y1={tick.y1}
-                x2={tick.x2}
-                y2={tick.y2}
-                stroke={centerColors[selectedCenter]}
-                strokeWidth="1.5"
-              />
-            ))}
-            
-            {points.map((point, index) => (
-              <circle
-                key={index}
-                cx={point.x}
-                cy={point.y}
-                r="6"
-                fill={hoveredPoint === index ? '#60A5FA' : '#3B82F6'}
-                stroke={hoveredPoint === index ? '#2563EB' : 'none'}
+
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+          <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+            <svg
+              ref={svgRef}
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 400 400"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {displayState === 2 && getRightAngles().map((angle, index) => (
+                <line
+                  key={`right-angle-${index}`}
+                  x1={angle.x1}
+                  y1={angle.y1}
+                  x2={angle.x2}
+                  y2={angle.y2}
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                />
+              ))}
+              
+              <polygon
+                points={`${points[0].x},${points[0].y} ${points[1].x},${points[1].y} ${points[2].x},${points[2].y}`}
+                fill="rgba(147, 197, 253, 0.3)"
+                stroke="#3B82F6"
                 strokeWidth="2"
-                onMouseEnter={() => setHoveredPoint(index)}
-                onMouseLeave={() => !isDragging && setHoveredPoint(null)}
-                onMouseDown={() => {
-                  setIsDragging(true);
-                  setHoveredPoint(index);
-                }}
-                style={{ cursor: 'pointer' }}
               />
-            ))}
-            <circle cx={center.x} cy={center.y} r="4" fill={centerColors[selectedCenter]} />
-          </svg>
+              
+              {showIntersections && getIntersectionLines().map((line, index) => (
+                <line
+                  key={`line-${index}`}
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                  strokeDasharray="5,3"
+                  opacity="0.7"
+                />
+              ))}
+              
+              {showIntersections && selectedCenter === 'circumcenter' && displayState === 2 && (
+                <circle
+                  cx={currentCenter.x}
+                  cy={currentCenter.y}
+                  r={calculateCircumradius()}
+                  fill="none"
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                  opacity="0.7"
+                />
+              )}
+              
+              {showIntersections && selectedCenter === 'incenter' && displayState === 2 && (
+                <circle
+                  cx={currentCenter.x}
+                  cy={currentCenter.y}
+                  r={calculateInradius()}
+                  fill="none"
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                  opacity="0.7"
+                />
+              )}
+              
+              {displayState === 2 && selectedCenter === 'centroid' && getCentroidTickMarks().map((tick, index) => (
+                <line
+                  key={`tick-${index}`}
+                  x1={tick.x1}
+                  y1={tick.y1}
+                  x2={tick.x2}
+                  y2={tick.y2}
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                />
+              ))}
+              
+              {displayState === 2 && selectedCenter === 'circumcenter' && getCircumcenterTickMarks().map((tick, index) => (
+                <line
+                  key={`tick-${index}`}
+                  x1={tick.x1}
+                  y1={tick.y1}
+                  x2={tick.x2}
+                  y2={tick.y2}
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                />
+              ))}
+              
+              {displayState === 2 && selectedCenter === 'incenter' && getIncenterTickMarks().map((tick, index) => (
+                <line
+                  key={`tick-${index}`}
+                  x1={tick.x1}
+                  y1={tick.y1}
+                  x2={tick.x2}
+                  y2={tick.y2}
+                  stroke={centerColors[selectedCenter]}
+                  strokeWidth="1.5"
+                />
+              ))}
+              
+              {points.map((point, index) => (
+                <circle
+                  key={index}
+                  cx={point.x}
+                  cy={point.y}
+                  r="6"
+                  fill={hoveredPoint === index ? '#60A5FA' : '#3B82F6'}
+                  stroke={hoveredPoint === index ? '#2563EB' : 'none'}
+                  strokeWidth="2"
+                  onMouseEnter={() => setHoveredPoint(index)}
+                  onMouseLeave={() => !isDragging && setHoveredPoint(null)}
+                  onMouseDown={() => {
+                    setIsDragging(true);
+                    setHoveredPoint(index);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                />
+              ))}
+              <circle cx={center.x} cy={center.y} r="4" fill={centerColors[selectedCenter]} />
+            </svg>
+          </div>
         </div>
-        <div className="mt-3 flex justify-center">
-          <button 
+
+        <div className="flex justify-center mb-6">
+          <button
             onClick={() => setDisplayState((prev) => (prev + 1) % 3)}
-            className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold rounded-lg shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
-            {displayState === 0 ? "Show Intersections" : 
-             displayState === 1 ? "Show Intersections/Measurements" : 
-             "Hide Intersections/Measurements"}
+            {displayState === 0 ? 'Show Intersections' : displayState === 1 ? 'Show Measurements' : 'Hide All'}
           </button>
         </div>
-        <div className="mt-2 p-2 bg-gray-100 rounded-lg">
-          <p className="text-sm text-gray-700">{centerInfo[selectedCenter]}</p>
+
+        <div className="prose max-w-none">
+          {selectedCenter === 'centroid' && (
+            <p className="text-gray-700">
+              {centerInfo[selectedCenter]}
+            </p>
+          )}
+          {selectedCenter === 'circumcenter' && (
+            <p className="text-gray-700">
+              The circumcenter is the center of the circumscribed circle (circumcircle) of the triangle. It's where the perpendicular bisectors intersect!
+            </p>
+          )}
+          {selectedCenter === 'incenter' && (
+            <p className="text-gray-700">
+              The incenter is the center of the inscribed circle (incircle) of the triangle. It's where the angle bisectors intersect!
+            </p>
+          )}
+          {selectedCenter === 'orthocenter' && (
+            <p className="text-gray-700">
+              The orthocenter is the intersection point of the triangle's three altitudes. It's where the perpendicular lines from vertices to opposite sides meet!
+            </p>
+          )}
         </div>
       </div>
     </div>
