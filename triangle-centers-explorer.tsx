@@ -267,7 +267,7 @@ const TriangleCenters = () => {
             onClick={() => setShowIntersections(!showIntersections)}
             className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
           >
-            {showIntersections ? "Hide Intersections" : "Show Intersections"}
+            {showIntersections ? "Hide Intersections/Measurements" : "Show Intersections/Measurements"}
           </button>
         </div>
         <div className="mt-4 p-4 bg-gray-100 rounded-lg">
