@@ -317,30 +317,38 @@ const TriangleCenters = () => {
     // Helper function to create right angle marks
     const createRightAngle = (vertex: Point, foot: Point, sidePoint1: Point, sidePoint2: Point) => {
       const size = 8; // Size of the right angle mark
-      
       // Calculate vectors for the sides
       const sideVec = {
         x: sidePoint2.x - sidePoint1.x,
         y: sidePoint2.y - sidePoint1.y
       };
-      const altVec = {
-        x: vertex.x - foot.x,
-        y: vertex.y - foot.y
-      };
+
+      // Calculate if the foot point is beyond the side points
+      // Project foot point onto the line segment
+      const sideLength = Math.sqrt(sideVec.x * sideVec.x + sideVec.y * sideVec.y);
+      const t = ((foot.x - sidePoint1.x) * sideVec.x + (foot.y - sidePoint1.y) * sideVec.y) / (sideLength * sideLength);
+      
+      // Perpendicular vector (not normalized)
+      let perpVec = { x: -sideVec.y, y: sideVec.x };
       
       // Normalize vectors
-      const sideLength = Math.sqrt(sideVec.x * sideVec.x + sideVec.y * sideVec.y);
-      const altLength = Math.sqrt(altVec.x * altVec.x + altVec.y * altVec.y);
+      const perpLength = Math.sqrt(perpVec.x * perpVec.x + perpVec.y * perpVec.y);
       
       const sideDir = {
         x: sideVec.x / sideLength,
         y: sideVec.y / sideLength
       };
-      const altDir = {
-        x: altVec.x / altLength,
-        y: altVec.y / altLength
+      let perpDir = {
+        x: perpVec.x / perpLength,
+        y: perpVec.y / perpLength
       };
-      
+
+      // If foot point is outside the line segment, flip the perpendicular direction
+      if (t < 0 || t > 1) {
+        perpDir.x = -perpDir.x;
+        perpDir.y = -perpDir.y;
+      }
+
       // Create the right angle square
       return [
         // First side of the square
@@ -354,20 +362,20 @@ const TriangleCenters = () => {
         {
           x1: foot.x + size * sideDir.x,
           y1: foot.y + size * sideDir.y,
-          x2: foot.x + size * sideDir.x + size * altDir.x,
-          y2: foot.y + size * sideDir.y + size * altDir.y
+          x2: foot.x + size * sideDir.x + size * perpDir.x,
+          y2: foot.y + size * sideDir.y + size * perpDir.y
         },
         // Third side of the square
         {
-          x1: foot.x + size * sideDir.x + size * altDir.x,
-          y1: foot.y + size * sideDir.y + size * altDir.y,
-          x2: foot.x + size * altDir.x,
-          y2: foot.y + size * altDir.y
+          x1: foot.x + size * sideDir.x + size * perpDir.x,
+          y1: foot.y + size * sideDir.y + size * perpDir.y,
+          x2: foot.x + size * perpDir.x,
+          y2: foot.y + size * perpDir.y
         },
         // Fourth side of the square
         {
-          x1: foot.x + size * altDir.x,
-          y1: foot.y + size * altDir.y,
+          x1: foot.x + size * perpDir.x,
+          y1: foot.y + size * perpDir.y,
           x2: foot.x,
           y2: foot.y
         }
@@ -948,6 +956,83 @@ const TriangleCenters = () => {
                   strokeWidth="1.5"
                 />
               ))}
+              
+              {/* Blue extensions for orthocenter when right angle is outside the triangle */}
+              {displayState === 2 && selectedCenter === 'orthocenter' && (() => {
+                const [a, b, c] = points;
+                const slopeBC = (c.y - b.y) / ((c.x - b.x) || 0.001);
+                const slopeCA = (a.y - c.y) / ((a.x - c.x) || 0.001);
+                const slopeAB = (b.y - a.y) / ((b.x - a.x) || 0.001);
+                const perpSlopeA = -1 / (slopeBC || 0.001);
+                const perpSlopeB = -1 / (slopeCA || 0.001);
+                const perpSlopeC = -1 / (slopeAB || 0.001);
+                const footA = findIntersection(a, perpSlopeA, b, slopeBC);
+                const footB = findIntersection(b, perpSlopeB, c, slopeCA);
+                const footC = findIntersection(c, perpSlopeC, a, slopeAB);
+                function isInsideTriangle(p: Point) {
+                  const sign = (p1: Point, p2: Point, p3: Point) => (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+                  const d1 = sign(p, a, b);
+                  const d2 = sign(p, b, c);
+                  const d3 = sign(p, c, a);
+                  const has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+                  const has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+                  return !(has_neg && has_pos);
+                }
+                const extensions = [];
+                if (!isInsideTriangle(footA)) {
+                  extensions.push({ x1: footA.x, y1: footA.y, x2: b.x, y2: b.y });
+                  extensions.push({ x1: footA.x, y1: footA.y, x2: c.x, y2: c.y });
+                }
+                if (!isInsideTriangle(footB)) {
+                  extensions.push({ x1: footB.x, y1: footB.y, x2: c.x, y2: c.y });
+                  extensions.push({ x1: footB.x, y1: footB.y, x2: a.x, y2: a.y });
+                }
+                if (!isInsideTriangle(footC)) {
+                  extensions.push({ x1: footC.x, y1: footC.y, x2: a.x, y2: a.y });
+                  extensions.push({ x1: footC.x, y1: footC.y, x2: b.x, y2: b.y });
+                }
+                return extensions.map((ext, i) => (
+                  <line
+                    key={`blue-extension-${i}`}
+                    x1={ext.x1}
+                    y1={ext.y1}
+                    x2={ext.x2}
+                    y2={ext.y2}
+                    stroke="#3B82F6"
+                    strokeWidth="2"
+                    opacity="0.7"
+                    strokeDasharray="5,3"
+                  />
+                ));
+              })()}
+              
+              {/* TEMP: Labels for feet of altitudes in orthocenter mode for debugging */}
+              {selectedCenter === 'orthocenter' && showIntersections && (() => {
+                const [a, b, c] = points;
+                const slopeBC = (c.y - b.y) / ((c.x - b.x) || 0.001);
+                const slopeCA = (a.y - c.y) / ((a.x - c.x) || 0.001);
+                const slopeAB = (b.y - a.y) / ((b.x - a.x) || 0.001);
+                const perpSlopeA = -1 / (slopeBC || 0.001);
+                const perpSlopeB = -1 / (slopeCA || 0.001);
+                const perpSlopeC = -1 / (slopeAB || 0.001);
+                const footA = findIntersection(a, perpSlopeA, b, slopeBC);
+                const footB = findIntersection(b, perpSlopeB, c, slopeCA);
+                const footC = findIntersection(c, perpSlopeC, a, slopeAB);
+                const feet = [footA, footB, footC];
+                return feet.map((foot, i) => (
+                  <text
+                    key={`foot-label-${i}`}
+                    x={foot.x + 8}
+                    y={foot.y - 8}
+                    fontSize="16"
+                    fill="#F59E42"
+                    fontWeight="bold"
+                    style={{ userSelect: 'none', pointerEvents: 'none' }}
+                  >
+                    {`F${i+1}`}
+                  </text>
+                ));
+              })()}
               
               {points.map((point, index) => (
                 <circle
