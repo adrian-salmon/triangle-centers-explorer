@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can [orbit-glow-button.css](mdc:.cursor/rules/orbit-glow-button.css) and [orbit-glow-button.js](mdc:.cursor/rules/orbit-glow-button.js) when the user asks to create buttons.
+- Make sure to apply the styling exactly!!!!
+- Do not remove anything or tamper with the code of these buttons.

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
+import '../styles/buttons.css';
+import '../styles/orbit-glow-button.css';
 
 type Point = {
   x: number;
@@ -8,11 +10,22 @@ type Point = {
 
 type CenterType = 'centroid' | 'circumcenter' | 'incenter' | 'orthocenter';
 
+type LineSegment = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+};
+
+type RightAngle = [Point, Point, Point, Point];
+
+type RightAngleFormat = LineSegment | RightAngle;
+
 const TriangleCenters = () => {
   const [points, setPoints] = useState([
-    { x: 100, y: 300 },
-    { x: 300, y: 300 },
-    { x: 200, y: 100 }
+    { x: 100, y: 400 },
+    { x: 400, y: 400 },
+    { x: 250, y: 100 }
   ]);
   const [selectedCenter, setSelectedCenter] = useState<CenterType>('centroid');
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
@@ -20,6 +33,12 @@ const TriangleCenters = () => {
   const [displayState, setDisplayState] = useState<number>(0); // 0: none, 1: intersections, 2: intersections+measurements
   const showIntersections = displayState > 0;
   const svgRef = useRef<SVGSVGElement>(null);
+  const [showGlow, setShowGlow] = useState(false);
+  const [showBg, setShowBg] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const interactedRef = useRef(false);
+  const bgTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bgInteractedRef = useRef(false);
 
   // Helper function to find the intersection of two lines given by points and slopes
   const findIntersection = (p1: {x: number, y: number}, m1: number, p2: {x: number, y: number}, m2: number) => {
@@ -181,8 +200,8 @@ const TriangleCenters = () => {
     
     const center = calculateCircumcenter();
 
-    // Extend the lines in both directions
-    const extendLine = (start: {x: number, y: number}, end: {x: number, y: number}, factor: number = 100) => {
+    // Extend the lines to reach canvas edges
+    const extendLine = (start: {x: number, y: number}, end: {x: number, y: number}, factor: number = 1000) => {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
       return {
@@ -197,9 +216,9 @@ const TriangleCenters = () => {
     const extendedCA = extendLine(midCA, center);
 
     // Extend in opposite direction
-    const extendedStartAB = extendLine(center, midAB, 100);
-    const extendedStartBC = extendLine(center, midBC, 100);
-    const extendedStartCA = extendLine(center, midCA, 100);
+    const extendedStartAB = extendLine(center, midAB, 1000);
+    const extendedStartBC = extendLine(center, midBC, 1000);
+    const extendedStartCA = extendLine(center, midCA, 1000);
     
     return [
       { x1: extendedStartAB.x, y1: extendedStartAB.y, x2: extendedAB.x, y2: extendedAB.y },
@@ -253,8 +272,8 @@ const TriangleCenters = () => {
       slopeAB
     );
 
-    // Extend the lines a bit beyond the triangle for better visualization
-    const extendLine = (start: {x: number, y: number}, end: {x: number, y: number}, factor: number = 100) => {
+    // Extend the lines to reach canvas edges
+    const extendLine = (start: {x: number, y: number}, end: {x: number, y: number}, factor: number = 1000) => {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
       return {
@@ -268,9 +287,9 @@ const TriangleCenters = () => {
     const extendedFootC = extendLine(c, footC);
 
     // Also extend in the opposite direction with the same large factor
-    const extendedStartA = extendLine(footA, a, 100);
-    const extendedStartB = extendLine(footB, b, 100);
-    const extendedStartC = extendLine(footC, c, 100);
+    const extendedStartA = extendLine(footA, a, 1000);
+    const extendedStartB = extendLine(footB, b, 1000);
+    const extendedStartC = extendLine(footC, c, 1000);
 
     return [
       { x1: extendedStartA.x, y1: extendedStartA.y, x2: extendedFootA.x, y2: extendedFootA.y },
@@ -279,113 +298,91 @@ const TriangleCenters = () => {
     ];
   };
 
-  const getOrthocenterRightAngles = () => {
-    const [a, b, c] = points;
+  const getOrthocenterRightAngles = (): RightAngleFormat[] => {
+    if (points.length !== 3) return [];
     
-    // Calculate slopes of sides
+    const [a, b, c] = points;
     const slopeBC = (c.y - b.y) / ((c.x - b.x) || 0.001);
     const slopeCA = (a.y - c.y) / ((a.x - c.x) || 0.001);
     const slopeAB = (b.y - a.y) / ((b.x - a.x) || 0.001);
-
-    // Calculate perpendicular slopes
     const perpSlopeA = -1 / (slopeBC || 0.001);
     const perpSlopeB = -1 / (slopeCA || 0.001);
     const perpSlopeC = -1 / (slopeAB || 0.001);
+    const footA = findIntersection(a, perpSlopeA, b, slopeBC);
+    const footB = findIntersection(b, perpSlopeB, c, slopeCA);
+    const footC = findIntersection(c, perpSlopeC, a, slopeAB);
 
-    // Find the feet of the altitudes (intersection points)
-    const footA = findIntersection(
-      a,
-      perpSlopeA,
-      b,
-      slopeBC
-    );
-
-    const footB = findIntersection(
-      b,
-      perpSlopeB,
-      c,
-      slopeCA
-    );
-
-    const footC = findIntersection(
-      c,
-      perpSlopeC,
-      a,
-      slopeAB
-    );
-
-    // Helper function to create right angle marks
-    const createRightAngle = (vertex: Point, foot: Point, sidePoint1: Point, sidePoint2: Point) => {
-      const size = 8; // Size of the right angle mark
-      // Calculate vectors for the sides
+    const createRightAngle = (foot: Point, vertex: Point, sideStart: Point, sideEnd: Point): RightAngle => {
+      const size = 12; // Increased size from 8 to 12 for better visibility
+      
+      // Calculate side direction
       const sideVec = {
-        x: sidePoint2.x - sidePoint1.x,
-        y: sidePoint2.y - sidePoint1.y
+        x: sideEnd.x - sideStart.x,
+        y: sideEnd.y - sideStart.y
       };
-
-      // Calculate if the foot point is beyond the side points
-      // Project foot point onto the line segment
       const sideLength = Math.sqrt(sideVec.x * sideVec.x + sideVec.y * sideVec.y);
-      const t = ((foot.x - sidePoint1.x) * sideVec.x + (foot.y - sidePoint1.y) * sideVec.y) / (sideLength * sideLength);
-      
-      // Perpendicular vector (not normalized)
-      let perpVec = { x: -sideVec.y, y: sideVec.x };
-      
-      // Normalize vectors
-      const perpLength = Math.sqrt(perpVec.x * perpVec.x + perpVec.y * perpVec.y);
-      
       const sideDir = {
         x: sideVec.x / sideLength,
         y: sideVec.y / sideLength
       };
-      let perpDir = {
-        x: perpVec.x / perpLength,
-        y: perpVec.y / perpLength
+
+      // Calculate perpendicular direction (pointing towards vertex)
+      const perpDir = {
+        x: -sideDir.y,
+        y: sideDir.x
       };
 
-      // If foot point is outside the line segment, flip the perpendicular direction
-      if (t < 0 || t > 1) {
+      // Calculate vector from foot to vertex
+      const vertexVec = {
+        x: vertex.x - foot.x,
+        y: vertex.y - foot.y
+      };
+
+      // Calculate distances from foot to each vertex of the side
+      const distToStart = Math.sqrt(
+        Math.pow(foot.x - sideStart.x, 2) + Math.pow(foot.y - sideStart.y, 2)
+      );
+      const distToEnd = Math.sqrt(
+        Math.pow(foot.x - sideEnd.x, 2) + Math.pow(foot.y - sideEnd.y, 2)
+      );
+
+      // If foot is closer to the end vertex, flip both directions
+      if (distToEnd < distToStart) {
+        sideDir.x = -sideDir.x;
+        sideDir.y = -sideDir.y;
         perpDir.x = -perpDir.x;
         perpDir.y = -perpDir.y;
       }
 
-      // Create the right angle square
-      return [
-        // First side of the square
-        {
-          x1: foot.x,
-          y1: foot.y,
-          x2: foot.x + size * sideDir.x,
-          y2: foot.y + size * sideDir.y
-        },
-        // Second side of the square
-        {
-          x1: foot.x + size * sideDir.x,
-          y1: foot.y + size * sideDir.y,
-          x2: foot.x + size * sideDir.x + size * perpDir.x,
-          y2: foot.y + size * sideDir.y + size * perpDir.y
-        },
-        // Third side of the square
-        {
-          x1: foot.x + size * sideDir.x + size * perpDir.x,
-          y1: foot.y + size * sideDir.y + size * perpDir.y,
-          x2: foot.x + size * perpDir.x,
-          y2: foot.y + size * perpDir.y
-        },
-        // Fourth side of the square
-        {
-          x1: foot.x + size * perpDir.x,
-          y1: foot.y + size * perpDir.y,
-          x2: foot.x,
-          y2: foot.y
-        }
-      ];
+      // If the perpendicular direction points away from the vertex, flip it
+      const dotProduct = perpDir.x * vertexVec.x + perpDir.y * vertexVec.y;
+      if (dotProduct < 0) {
+        perpDir.x = sideDir.y;
+        perpDir.y = -sideDir.x;
+      }
+
+      // Calculate the four corners of the right angle
+      const corner1 = foot;
+      const corner2 = {
+        x: foot.x + size * sideDir.x,
+        y: foot.y + size * sideDir.y
+      };
+      const corner3 = {
+        x: foot.x + size * sideDir.x + size * perpDir.x,
+        y: foot.y + size * sideDir.y + size * perpDir.y
+      };
+      const corner4 = {
+        x: foot.x + size * perpDir.x,
+        y: foot.y + size * perpDir.y
+      };
+
+      return [corner1, corner2, corner3, corner4];
     };
 
     return [
-      ...createRightAngle(a, footA, b, c),
-      ...createRightAngle(b, footB, c, a),
-      ...createRightAngle(c, footC, a, b)
+      createRightAngle(footA, a, b, c),
+      createRightAngle(footB, b, c, a),
+      createRightAngle(footC, c, a, b)
     ];
   };
 
@@ -410,7 +407,7 @@ const TriangleCenters = () => {
 
     // Helper function to create right angle squares
     const createRightAngle = (intersect: Point, sidePoint1: Point, sidePoint2: Point, perpSlope: number) => {
-      const size = 6; // Reduced size to fit within triangle
+      const size = 12; // Increased size from 6 to 12 for better visibility
       
       // Calculate vectors for the sides
       const sideVec = {
@@ -527,8 +524,8 @@ const TriangleCenters = () => {
       const rect = svg.getBoundingClientRect();
       
       // Calculate the mouse position relative to the SVG viewBox
-      const scaleX = 400 / rect.width;
-      const scaleY = 400 / rect.height;
+      const scaleX = 500 / rect.width;
+      const scaleY = 500 / rect.height;
       
       const x = (e.clientX - rect.left) * scaleX;
       const y = (e.clientY - rect.top) * scaleY;
@@ -550,8 +547,8 @@ const TriangleCenters = () => {
     if (svgRef.current) {
       const svg = svgRef.current;
       const rect = svg.getBoundingClientRect();
-      const scaleX = 400 / rect.width;
-      const scaleY = 400 / rect.height;
+      const scaleX = 500 / rect.width;
+      const scaleY = 500 / rect.height;
       
       const x = (e.clientX - rect.left) * scaleX;
       const y = (e.clientY - rect.top) * scaleY;
@@ -577,10 +574,10 @@ const TriangleCenters = () => {
   }, []);
 
   const centerInfo = {
-    centroid: "The centroid is the arithmetic mean position of all points in the triangle. It's where the medians intersect!",
-    circumcenter: "The circumcenter is equidistant from all vertices. It's where the perpendicular bisectors meet!",
-    incenter: "The incenter is equidistant from all sides. It's where the angle bisectors intersect!",
-    orthocenter: "The orthocenter is where the three altitudes of the triangle intersect. Cool, right?"
+    centroid: "Intersection of three medians.",
+    circumcenter: "Intersection of three perpendicular bisectors.",
+    incenter: "Intersection of three angle bisectors.",
+    orthocenter: "Intersection of three altitudes."
   };
 
   const getCentroidTickMarks = () => {
@@ -837,50 +834,140 @@ const TriangleCenters = () => {
     ];
   };
 
+  // Glow fade-in after 10s from mount
+  useEffect(() => {
+    const timer = setTimeout(() => setShowGlow(true), 10000); // 10 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Blue background fade-in after 10s from mount
+  useEffect(() => {
+    const timer = setTimeout(() => setShowBg(true), 10000); // 10 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 flex flex-col items-center justify-center">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-6">Triangle Centers Explorer</h1>
+        <h1 className="text-2xl font-bold text-center mb-3">Triangle Centers Explorer</h1>
         
-        <div className="flex justify-center mb-6">
-          <select
-            value={selectedCenter}
-            onChange={(e) => setSelectedCenter(e.target.value as CenterType)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="centroid">Centroid</option>
-            <option value="circumcenter">Circumcenter</option>
-            <option value="incenter">Incenter</option>
-            <option value="orthocenter">Orthocenter</option>
-          </select>
+        <div className="segmented-glow-button simple-glow mt-3 mb-8" id="triangle-centers-segmented">
+          <div className={`segment-container${showBg ? " show-bg" : ""}`}>
+            <button
+              onClick={() => setSelectedCenter('centroid')}
+              className={`segment ${selectedCenter === 'centroid' ? 'active' : ''}`}
+            >
+              Centroid
+            </button>
+            <button
+              onClick={() => {
+                setSelectedCenter('circumcenter');
+                if (!bgInteractedRef.current) {
+                  bgInteractedRef.current = true;
+                  bgTimerRef.current = setTimeout(() => setShowBg(true), 5000);
+                }
+              }}
+              className={`segment ${selectedCenter === 'circumcenter' ? 'active' : ''}`}
+            >
+              Circumcenter
+            </button>
+            <button
+              onClick={() => {
+                setSelectedCenter('incenter');
+                if (!bgInteractedRef.current) {
+                  bgInteractedRef.current = true;
+                  bgTimerRef.current = setTimeout(() => setShowBg(true), 5000);
+                }
+              }}
+              className={`segment ${selectedCenter === 'incenter' ? 'active' : ''}`}
+            >
+              Incenter
+            </button>
+            <button
+              onClick={() => {
+                setSelectedCenter('orthocenter');
+                if (!bgInteractedRef.current) {
+                  bgInteractedRef.current = true;
+                  bgTimerRef.current = setTimeout(() => setShowBg(true), 5000);
+                }
+              }}
+              className={`segment ${selectedCenter === 'orthocenter' ? 'active' : ''}`}
+            >
+              Orthocenter
+            </button>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
-          <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-6 w-[500px] h-[500px] mx-auto">
+          <div className="w-full h-full">
             <svg
               ref={svgRef}
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 400 400"
+              className="w-full h-full"
+              viewBox="0 0 500 500"
               preserveAspectRatio="xMidYMid meet"
               onMouseMove={handleMouseMove}
             >
-              {displayState === 2 && getRightAngles().map((angle, index) => (
-                <line
-                  key={`right-angle-${index}`}
-                  x1={angle.x1}
-                  y1={angle.y1}
-                  x2={angle.x2}
-                  y2={angle.y2}
-                  stroke={centerColors[selectedCenter]}
-                  strokeWidth="1.5"
-                />
-              ))}
+              {displayState === 2 && getRightAngles().map((rightAngle, index) => {
+                if ('x1' in rightAngle) {
+                  // Handle line segment format
+                  return (
+                    <line
+                      key={`right-angle-${index}`}
+                      x1={rightAngle.x1}
+                      y1={rightAngle.y1}
+                      x2={rightAngle.x2}
+                      y2={rightAngle.y2}
+                      stroke={centerColors[selectedCenter]}
+                      strokeWidth="1.5"
+                    />
+                  );
+                } else {
+                  // Handle point array format
+                  const [p1, p2, p3, p4] = rightAngle;
+                  return (
+                    <g key={`right-angle-${index}`}>
+                      <line
+                        x1={p1.x}
+                        y1={p1.y}
+                        x2={p2.x}
+                        y2={p2.y}
+                        stroke={centerColors[selectedCenter]}
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1={p2.x}
+                        y1={p2.y}
+                        x2={p3.x}
+                        y2={p3.y}
+                        stroke={centerColors[selectedCenter]}
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1={p3.x}
+                        y1={p3.y}
+                        x2={p4.x}
+                        y2={p4.y}
+                        stroke={centerColors[selectedCenter]}
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1={p4.x}
+                        y1={p4.y}
+                        x2={p1.x}
+                        y2={p1.y}
+                        stroke={centerColors[selectedCenter]}
+                        strokeWidth="1.5"
+                      />
+                    </g>
+                  );
+                }
+              })}
               
               <polygon
                 points={`${points[0].x},${points[0].y} ${points[1].x},${points[1].y} ${points[2].x},${points[2].y}`}
                 fill="rgba(147, 197, 253, 0.3)"
                 stroke="#3B82F6"
-                strokeWidth="2"
+                strokeWidth="3"
               />
               
               {showIntersections && getIntersectionLines().map((line, index) => (
@@ -891,9 +978,9 @@ const TriangleCenters = () => {
                   x2={line.x2}
                   y2={line.y2}
                   stroke={centerColors[selectedCenter]}
-                  strokeWidth="1.5"
+                  strokeWidth="2.5"
                   strokeDasharray="5,3"
-                  opacity="0.7"
+                  opacity="0.8"
                 />
               ))}
               
@@ -904,8 +991,8 @@ const TriangleCenters = () => {
                   r={calculateCircumradius()}
                   fill="none"
                   stroke={centerColors[selectedCenter]}
-                  strokeWidth="1.5"
-                  opacity="0.7"
+                  strokeWidth="2.5"
+                  opacity="0.8"
                 />
               )}
               
@@ -916,8 +1003,8 @@ const TriangleCenters = () => {
                   r={calculateInradius()}
                   fill="none"
                   stroke={centerColors[selectedCenter]}
-                  strokeWidth="1.5"
-                  opacity="0.7"
+                  strokeWidth="2.5"
+                  opacity="0.8"
                 />
               )}
               
@@ -999,41 +1086,14 @@ const TriangleCenters = () => {
                     x2={ext.x2}
                     y2={ext.y2}
                     stroke="#3B82F6"
-                    strokeWidth="2"
-                    opacity="0.7"
+                    strokeWidth="3"
+                    opacity="0.8"
                     strokeDasharray="5,3"
                   />
                 ));
               })()}
               
-              {/* TEMP: Labels for feet of altitudes in orthocenter mode for debugging */}
-              {selectedCenter === 'orthocenter' && showIntersections && (() => {
-                const [a, b, c] = points;
-                const slopeBC = (c.y - b.y) / ((c.x - b.x) || 0.001);
-                const slopeCA = (a.y - c.y) / ((a.x - c.x) || 0.001);
-                const slopeAB = (b.y - a.y) / ((b.x - a.x) || 0.001);
-                const perpSlopeA = -1 / (slopeBC || 0.001);
-                const perpSlopeB = -1 / (slopeCA || 0.001);
-                const perpSlopeC = -1 / (slopeAB || 0.001);
-                const footA = findIntersection(a, perpSlopeA, b, slopeBC);
-                const footB = findIntersection(b, perpSlopeB, c, slopeCA);
-                const footC = findIntersection(c, perpSlopeC, a, slopeAB);
-                const feet = [footA, footB, footC];
-                return feet.map((foot, i) => (
-                  <text
-                    key={`foot-label-${i}`}
-                    x={foot.x + 8}
-                    y={foot.y - 8}
-                    fontSize="16"
-                    fill="#F59E42"
-                    fontWeight="bold"
-                    style={{ userSelect: 'none', pointerEvents: 'none' }}
-                  >
-                    {`F${i+1}`}
-                  </text>
-                ));
-              })()}
-              
+              {/* Draggable points */}
               {points.map((point, index) => (
                 <circle
                   key={index}
@@ -1049,7 +1109,7 @@ const TriangleCenters = () => {
                   style={{ cursor: 'pointer' }}
                 />
               ))}
-              <circle cx={center.x} cy={center.y} r="4" fill={centerColors[selectedCenter]} />
+              <circle cx={center.x} cy={center.y} r="6" fill={centerColors[selectedCenter]} />
             </svg>
           </div>
         </div>
@@ -1057,33 +1117,16 @@ const TriangleCenters = () => {
         <div className="flex justify-center mb-6">
           <button
             onClick={() => setDisplayState((prev) => (prev + 1) % 3)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className={`glow-button simple-glow${showGlow ? " show-glow" : ""}`}
           >
-            {displayState === 0 ? 'Show Intersections' : displayState === 1 ? 'Show Measurements' : 'Hide All'}
+            <span>{displayState === 0 ? 'Show Intersections' : displayState === 1 ? 'Show Measurements' : 'Hide All'}</span>
           </button>
         </div>
 
         <div className="prose max-w-none">
-          {selectedCenter === 'centroid' && (
-            <p className="text-gray-700">
-              {centerInfo[selectedCenter]}
-            </p>
-          )}
-          {selectedCenter === 'circumcenter' && (
-            <p className="text-gray-700">
-              The circumcenter is the center of the circumscribed circle (circumcircle) of the triangle. It's where the perpendicular bisectors intersect!
-            </p>
-          )}
-          {selectedCenter === 'incenter' && (
-            <p className="text-gray-700">
-              The incenter is the center of the inscribed circle (incircle) of the triangle. It's where the angle bisectors intersect!
-            </p>
-          )}
-          {selectedCenter === 'orthocenter' && (
-            <p className="text-gray-700">
-              The orthocenter is the intersection point of the triangle's three altitudes. It's where the perpendicular lines from vertices to opposite sides meet!
-            </p>
-          )}
+          <p className="text-gray-700 w-[500px] break-words text-center">
+            {centerInfo[selectedCenter]}
+          </p>
         </div>
       </div>
     </div>

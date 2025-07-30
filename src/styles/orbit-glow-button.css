@@ -1,0 +1,235 @@
+/* Button Styles */
+.glow-button { 
+  width: 220px;
+  height: 60px; 
+  position: relative; 
+  border-radius: 12px; 
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: ProximaNova, Helvetica Neue, Arial, Helvetica, sans-serif;
+  color: #fff;
+  z-index: 1;
+  transition: all .3s ease;
+  padding: 0 32px;
+  box-sizing: border-box;
+  overflow: visible;
+  background: #f8fafc;
+}
+
+.glow-button::before {
+  content: "";
+  display: block;
+  position: absolute;
+  background: #fff;
+  inset: 2px;
+  border-radius: 10px;
+  z-index: -2;
+}
+
+.glow-button::after {
+  content: "";
+  display: block;
+  position: absolute;
+  background: #008545;
+  inset: 8px;
+  border-radius: 8px;
+  z-index: -1;
+  transition: all .3s ease;
+}
+
+.glow-button:hover::after {
+  background: rgb(0, 174, 90);
+}
+
+.glow-button.inactive {
+  opacity: 0.5;
+  background: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+@property --r {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.simple-glow {
+  background: conic-gradient(
+    from var(--r),
+    transparent 0%,
+    rgb(0, 255, 132) 2%,
+    rgb(0, 214, 111) 8%,
+    rgb(0, 174, 90) 12%,
+    rgb(0, 133, 69) 14%,
+    transparent 15%
+  );
+  animation: rotating 3s linear infinite;
+  transition: animation 0.3s ease;
+}
+
+.simple-glow:hover {
+  animation: rotating 1.5s linear infinite;
+}
+
+
+@keyframes rotating {
+  0% {
+    --r: 0deg;
+  }
+  100% {
+    --r: 360deg;
+  }
+}
+
+/* Segmented Button Styles */
+.segmented-glow-button {
+  display: flex;
+  min-width: auto;
+  height: auto;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.segmented-glow-button.simple-glow {
+  padding: 16px 32px;
+  border-radius: 14px;
+  background: conic-gradient(
+    from var(--r),
+    transparent 0%,
+    rgb(0, 255, 132) 2%,
+    rgb(0, 214, 111) 8%,
+    rgb(0, 174, 90) 12%,
+    rgb(0, 133, 69) 14%,
+    transparent 15%
+  );
+  animation: rotating 3s linear infinite;
+  transition: animation 0.3s ease;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.segmented-glow-button .segment-container {
+  position: relative;
+  background: #f8fafc;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 64px;
+}
+
+.segmented-glow-button .segment-container::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -16px;
+  right: -16px;
+  bottom: -8px;
+  background: #f8fafc;
+  border-radius: 16px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.segmented-glow-button .segment-container.show-bg::before {
+  opacity: 1;
+}
+
+.segmented-glow-button .segment {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto; 
+  height: 44px; 
+  border: 2px solid #dee6f0;
+  background: #fff;
+  color: #2f3542;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: ProximaNova, Helvetica Neue, Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  padding: 0 16px; 
+  border-radius: 10px; 
+}
+
+.segmented-glow-button::after {
+  display: none;
+}
+
+.segmented-glow-button::before {
+  z-index: -2;
+}
+
+.segmented-glow-button .segment:hover {
+  color: #fff;
+  border: 2px solid transparent;
+  background: rgb(0, 174, 90);
+  transition: background-color .3s ease;
+}
+
+.segmented-glow-button .segment.active {
+  color: #fff;
+  border: 2px solid transparent;
+  background: #008545;
+  transition: background-color .3s ease;
+}
+
+/* Add border radius to first and last segments for consistency */
+.segmented-glow-button .segment:first-child {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.segmented-glow-button .segment:last-child {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Hide the orbiting line when active */
+.segmented-glow-button.hide-orbit {
+  background: none;
+}
+
+/* Ensure hover effects don't apply to inactive buttons */
+.glow-button.inactive:hover::after {
+  background: inherit;
+}
+
+.simple-glow.inactive:hover {
+  animation: rotating 3s linear infinite;
+}
+
+.segmented-glow-button.simple-glow {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px;
+  border-radius: 12px;
+  background: conic-gradient(
+    from var(--r),
+    transparent 0%,
+    rgb(0, 255, 132) 2%,
+    rgb(0, 214, 111) 8%,
+    rgb(0, 174, 90) 12%,
+    rgb(0, 133, 69) 14%,
+    transparent 15%
+  );
+  animation: rotating 3s linear infinite;
+  transition: animation 0.3s ease;
+  box-sizing: border-box;
+} 
