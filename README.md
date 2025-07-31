@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Triangle Centers Explorer
 
 An interactive visualization tool for exploring the four main centers of a triangle:
@@ -40,3 +41,6 @@ npm run dev
 
 ## License
 MIT 
+=======
+# triangle-centers-explorer
+>>>>>>> ad5a369e40c0f31e2b6b02a3107d5e00322f5253
