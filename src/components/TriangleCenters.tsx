@@ -518,17 +518,30 @@ const TriangleCenters = () => {
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) => {
     if (isDragging && hoveredPoint !== null && svgRef.current) {
       const svg = svgRef.current;
       const rect = svg.getBoundingClientRect();
       
-      // Calculate the mouse position relative to the SVG viewBox
+      // Calculate the position relative to the SVG viewBox
       const scaleX = 500 / rect.width;
       const scaleY = 500 / rect.height;
       
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      let clientX, clientY;
+      
+      // Handle both mouse and touch events
+      if ('touches' in e) {
+        // Touch event
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        // Mouse event
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
       
       setPoints(prevPoints => {
         const newPoints = [...prevPoints];
@@ -538,20 +551,33 @@ const TriangleCenters = () => {
     }
   };
 
-  const handleMouseDown = (index: number, e: React.MouseEvent<SVGCircleElement>) => {
+  const handleMouseDown = (index: number, e: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
     e.preventDefault(); // Prevent any default behavior
     setIsDragging(true);
     setHoveredPoint(index);
     
-    // Immediately update the point position to match the click
+    // Immediately update the point position to match the click/touch
     if (svgRef.current) {
       const svg = svgRef.current;
       const rect = svg.getBoundingClientRect();
       const scaleX = 500 / rect.width;
       const scaleY = 500 / rect.height;
       
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      let clientX, clientY;
+      
+      // Handle both mouse and touch events
+      if ('touches' in e) {
+        // Touch event
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        // Mouse event
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
       
       setPoints(prevPoints => {
         const newPoints = [...prevPoints];
@@ -568,8 +594,10 @@ const TriangleCenters = () => {
 
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleMouseUp);
     return () => {
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchend', handleMouseUp);
     };
   }, []);
 
@@ -906,6 +934,8 @@ const TriangleCenters = () => {
               viewBox="0 0 500 500"
               preserveAspectRatio="xMidYMid meet"
               onMouseMove={handleMouseMove}
+              onTouchMove={handleMouseMove}
+              style={{ touchAction: 'none' }}
             >
               {displayState === 2 && getRightAngles().map((rightAngle, index) => {
                 if ('x1' in rightAngle) {
@@ -1106,7 +1136,8 @@ const TriangleCenters = () => {
                   onMouseEnter={() => setHoveredPoint(index)}
                   onMouseLeave={() => !isDragging && setHoveredPoint(null)}
                   onMouseDown={(e) => handleMouseDown(index, e)}
-                  style={{ cursor: 'pointer' }}
+                  onTouchStart={(e) => handleMouseDown(index, e)}
+                  style={{ cursor: 'pointer', touchAction: 'none' }}
                 />
               ))}
               <circle cx={center.x} cy={center.y} r="6" fill={centerColors[selectedCenter]} />
